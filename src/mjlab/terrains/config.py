@@ -54,6 +54,25 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
   add_lights=True,
 )
 
+STAIR_TERRAINS_CFG = TerrainGeneratorCfg(
+    size=(8.0, 8.0),
+    border_width=20.0,
+    num_rows=10,
+    num_cols=20,
+    sub_terrains={
+    "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
+      proportion=1.0,
+      step_height_range=(0.1, 0.3),
+      step_width=0.35,
+      platform_width=3.0,
+      border_width=1.0,
+    ),
+    },
+    add_lights=True,
+)
+
+
+
 
 if __name__ == "__main__":
   import mujoco.viewer

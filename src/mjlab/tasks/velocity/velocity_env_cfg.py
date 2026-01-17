@@ -22,7 +22,7 @@ from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.terrains import TerrainImporterCfg
-from mjlab.terrains.config import ROUGH_TERRAINS_CFG
+from mjlab.terrains.config import ROUGH_TERRAINS_CFG, STAIR_TERRAINS_CFG
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
 
@@ -387,3 +387,11 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     decimation=4,
     episode_length_s=20.0,
   )
+
+
+# def make_stairs_env_cfg() -> ManagerBasedRlEnvCfg:
+#   """Create stairs velocity tracking task configuration."""
+#   cfg = make_velocity_env_cfg()
+#   # Override the terrain generator with the stairs configuration.
+#   cfg.scene.terrain.terrain_generator = replace(STAIR_TERRAINS_CFG)
+#   return cfg
