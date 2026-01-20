@@ -391,11 +391,3 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     decimation=4,
     episode_length_s=20.0,
   )
-
-
-# def make_stairs_env_cfg() -> ManagerBasedRlEnvCfg:
-#   """Create stairs velocity tracking task configuration."""
-#   cfg = make_velocity_env_cfg()
-#   # Override the terrain generator with the stairs configuration.
-#   cfg.scene.terrain.terrain_generator = replace(STAIR_TERRAINS_CFG)
-#   return cfg
