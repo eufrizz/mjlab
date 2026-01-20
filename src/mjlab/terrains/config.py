@@ -61,9 +61,16 @@ STAIR_TERRAINS_CFG = TerrainGeneratorCfg(
     num_cols=20,
     sub_terrains={
     "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
-      proportion=1.0,
+      proportion=0.5,
       step_height_range=(0.01, 0.3),
       step_width=0.35,
+      platform_width=3.0,
+      border_width=1.0,
+    ),
+    "pyramid_stairs_inv": terrain_gen.BoxInvertedPyramidStairsTerrainCfg(
+      proportion=0.5,
+      step_height_range=(0.01, 0.3),
+      step_width=0.3,
       platform_width=3.0,
       border_width=1.0,
     ),

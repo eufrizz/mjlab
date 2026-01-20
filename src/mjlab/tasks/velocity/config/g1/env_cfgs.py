@@ -213,16 +213,6 @@ def unitree_g1_stair_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create Unitree G1 stair terrain velocity configuration."""
   cfg = make_velocity_env_cfg()
 
-  # scene=SceneCfg(
-  #     terrain=TerrainImporterCfg(
-  #       terrain_type="generator",
-  #       terrain_generator=replace(ROUGH_TERRAINS_CFG),
-  #       max_init_terrain_level=5,
-  #     ),
-  #     num_envs=1,
-  #     extent=2.0,
-  #   ),
-
   # Switch to stair terrain.
   assert cfg.scene.terrain is not None
   cfg.scene.terrain.terrain_type = "generator"
@@ -261,7 +251,18 @@ def unitree_g1_stair_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     reduce="none",
     num_slots=1,
   )
-  cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg)
+
+  depth_sensor_cfg = RayCastSensorCfg(
+    name="depth_sensor",
+    frame=ObjRef(type="site", name="head_camera_site", entity="robot"),
+    pattern=PinholeCameraPatternCfg(width=16, height=12, fovy=60.0),
+    max_distance=5.0,
+    debug_vis=True,
+    # viz=RayCastSensorCfg.VizCfg(show_rays=True),
+    # include_geom_groups=(0,),  # Only hit terrain (assuming terrain is group 0)
+  )
+
+  cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg, depth_sensor_cfg)
 
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
     cfg.scene.terrain.terrain_generator.curriculum = True
