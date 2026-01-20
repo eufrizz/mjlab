@@ -62,6 +62,10 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
       func=mdp.generated_commands,
       params={"command_name": "twist"},
     ),
+    "depth_scan": ObservationTermCfg(
+      func=mdp.depth_sensor_data,
+      params={"sensor_name": "depth_sensor"},
+    ),
   }
 
   critic_terms = {

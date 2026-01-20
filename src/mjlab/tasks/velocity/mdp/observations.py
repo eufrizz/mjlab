@@ -42,3 +42,10 @@ def foot_contact_forces(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tenso
   assert sensor_data.force is not None
   forces_flat = sensor_data.force.flatten(start_dim=1)  # [B, N*3]
   return torch.sign(forces_flat) * torch.log1p(torch.abs(forces_flat))
+
+def depth_sensor_data(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
+  sensor = env.scene[sensor_name]
+  distances = sensor.data.distances
+  # Replace misses (-1) with max distance.
+  distances = torch.where(distances < 0.0, sensor.cfg.max_distance, distances)
+  return distances
