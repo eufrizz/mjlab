@@ -65,6 +65,7 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     "depth_scan": ObservationTermCfg(
       func=mdp.depth_sensor_data,
       params={"sensor_name": "depth_sensor"},
+      noise=Unoise(n_min=-0.1, n_max=0.1),
     ),
   }
 
