@@ -9,7 +9,13 @@ from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
-from mjlab.sensor import ContactMatch, ContactSensorCfg
+from mjlab.sensor import (
+  ContactMatch,
+  ContactSensorCfg,
+  ObjRef,
+  PinholeCameraPatternCfg,
+  RayCastSensorCfg,
+)
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
@@ -52,7 +58,18 @@ def unitree_g1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     reduce="none",
     num_slots=1,
   )
-  cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg)
+
+  depth_sensor_cfg = RayCastSensorCfg(
+    name="depth_sensor",
+    frame=ObjRef(type="site", name="head_camera_site", entity="robot"),
+    pattern=PinholeCameraPatternCfg(width=16, height=12, fovy=60.0),
+    max_distance=5.0,
+    debug_vis=True,
+    # viz=RayCastSensorCfg.VizCfg(show_rays=True),
+    # include_geom_groups=(0,),  # Only hit terrain (assuming terrain is group 0)
+  )
+
+  cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg, depth_sensor_cfg)
 
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
     cfg.scene.terrain.terrain_generator.curriculum = True
