@@ -292,6 +292,7 @@ class Simulation:
   # Private methods.
 
   def _should_use_cuda_graph(self) -> bool:
+    return False
     """Determine if CUDA graphs can be used based on device and driver version."""
     if not self.wp_device.is_cuda:
       return False
