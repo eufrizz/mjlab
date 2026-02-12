@@ -29,7 +29,8 @@ def unitree_g1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   for sensor in cfg.scene.sensors or ():
     if sensor.name == "terrain_scan":
       assert isinstance(sensor, RayCastSensorCfg)
-      sensor.frame.name = "pelvis"
+      sensor.frame.type = "site"
+      sensor.frame.name = "head_camera_site"
 
   site_names = ("left_foot", "right_foot")
   geom_names = tuple(

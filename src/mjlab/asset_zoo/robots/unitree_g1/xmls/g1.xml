@@ -67,6 +67,7 @@
       <geom class="visual" mesh="pelvis_contour_link"/>
       <geom name="pelvis_collision" class="collision" type="sphere" size="0.07" pos="0 0 -0.08"/>
       <site name="imu_in_pelvis" size="0.01" pos="0.04525 0 -0.08339"/>
+      <site name="pelvis_camera_site" size="0.01" pos="0.5 0 0"/>
       <body name="left_hip_pitch_link" pos="0 0.064452 -0.1027">
         <inertial pos="0.002741 0.047791 -0.02606" quat="0.954862 0.293964 0.0302556 0.030122" mass="1.35"
           diaginertia="0.00181517 0.00153422 0.00116212"/>
@@ -195,6 +196,8 @@
             <geom name="torso_collision" class="collision" size="0.09" fromto="0.01 0 0.08 0.01 0 0.2"/>
             <geom name="head_collision" class="collision" type="sphere" size="0.06" pos="0 0 .43"/>
             <site name="imu_in_torso" size="0.01" pos="-0.03959 -0.00224 0.14792"/>
+            <!-- <site name="head_camera_site" size="0.01" pos="0.09 0 0.45" quat="0 -0.3420201 0 0.9396926"/> -->
+            <site name="head_camera_site" size="0.01" pos="0.75 0 0"/>
             <body name="left_shoulder_pitch_link" pos="0.0039563 0.10022 0.24778"
               quat="0.990264 0.139201 1.38722e-05 -9.86868e-05">
               <inertial pos="0 0.035892 -0.011628" quat="0.654152 0.0130458 -0.326267 0.68225" mass="0.718"
