@@ -367,7 +367,7 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     name="terrain_scan",
     frame=ObjRef(type="body", name="", entity="robot"),  # Set per-robot.
     ray_alignment="yaw",
-    pattern=GridPatternCfg(size=(1.6, 1.0), resolution=0.1),
+    pattern=GridPatternCfg(size=(1.5, 1.05), resolution=0.15),
     max_distance=5.0,
     exclude_parent_body=True,
     debug_vis=True,
