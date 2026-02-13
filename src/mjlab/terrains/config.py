@@ -188,12 +188,11 @@ GAP_TERRAINS_CFG = TerrainGeneratorCfg(
   size=(16.0, 8.0),
   border_width=20.0,
   num_rows=10,
-  num_cols=1,
+  num_cols=4,
   sub_terrains={
-    "flat": terrain_gen.BoxFlatTerrainCfg(proportion=0.15),
     "gap": terrain_gen.BoxGapTerrainCfg(
       proportion=0.8,
-      platform_height_range=(0.4, 0.8),
+      platform_height_variation=(0.0, 0.2),
       platform_length_range=(0.5, 2.0),
       gap_width_range=(0.2, 1.0),
     ),

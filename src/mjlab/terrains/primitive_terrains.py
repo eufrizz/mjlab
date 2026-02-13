@@ -1688,11 +1688,11 @@ class BoxGapTerrainCfg(SubTerrainCfg):
   facing the first gap when its yaw is near zero.
   """
 
-  platform_height_range: tuple[float, float] = (0.15, 0.5)
-  """(min, max) height of platforms above ground, in meters.
+  platform_height_variation: tuple[float, float] = (0.0, 0.2)
+  """(min, max) amount of variation in platform heigh
 
-  At difficulty=0 platforms are nearly flush with the ground
-  (easy), at difficulty=1 they are at full height (scary fall).
+  At difficulty=0 platforms are all level
+  (easy), at difficulty=1 they are significantly different heights
   """
 
   platform_length_range: tuple[float, float] = (1.5, 3.0)
@@ -1721,7 +1721,6 @@ class BoxGapTerrainCfg(SubTerrainCfg):
     spec: mujoco.MjSpec,
     rng: np.random.Generator,
   ) -> TerrainOutput:
-    del rng  # Unused.
     body = spec.body("terrain")
     boxes = []
     box_colors: list[Tuple[float, float, float, float]] = []
@@ -1736,48 +1735,23 @@ class BoxGapTerrainCfg(SubTerrainCfg):
     platform_length = self.platform_length_range[1] - difficulty * (
       self.platform_length_range[1] - self.platform_length_range[0]
     )
-    platform_height = self.platform_height_range[0] + difficulty * (
-      self.platform_height_range[1] - self.platform_height_range[0]
+    platform_height_var = self.platform_height_variation[0] + difficulty * (
+      self.platform_height_variation[1] - self.platform_height_variation[0]
     )
-    # if self.platform_width_range is not None:
-    #   platform_width = self.platform_width_range[1] - difficulty * (
-    #     self.platform_width_range[1] - self.platform_width_range[0]
-    #   )
-    # else:
-    platform_width = terrain_width
-
-    # Ground floor beneath the platforms so falling lands on
-    # solid ground rather than void.
-    ground_thickness = 1.0
-    ground = body.add_geom(
-      type=mujoco.mjtGeom.mjGEOM_BOX,
-      size=(
-        terrain_length / 2,
-        terrain_width / 2,
-        ground_thickness / 2,
-      ),
-      pos=(
-        terrain_length / 2,
-        terrain_width / 2,
-        -ground_thickness / 2,
-      ),
-    )
-    boxes.append(ground)
-    box_colors.append((0.3, 0.3, 0.3, 1.0))
 
     # Lay platforms along +x with gaps between them.
     x_cursor = 0.0
     platform_index = 0
     num_platforms_est = max(int(terrain_length / (platform_length + gap_width)), 1)
+    prev_box_height = 0.0
 
     while x_cursor + 0.5 <= terrain_length:
       current_length = min(platform_length, terrain_length - x_cursor)
-      # if current_length < 0.3:
-      #   break
 
       half_len = current_length / 2
-      half_wid = platform_width / 2
-      box_half_h = platform_height / 2
+      half_wid = terrain_width / 2
+      box_half_h = 0.1
+      box_z = prev_box_height + rng.uniform(-platform_height_var, platform_height_var)
 
       t = platform_index / max(num_platforms_est, 1)
       rgba = brand_ramp(_MUJOCO_ORANGE, min(t, 1.0))
@@ -1788,7 +1762,7 @@ class BoxGapTerrainCfg(SubTerrainCfg):
         pos=(
           x_cursor + half_len,
           terrain_width / 2,
-          box_half_h,
+          box_z,
         ),
       )
       boxes.append(plat)
@@ -1796,6 +1770,7 @@ class BoxGapTerrainCfg(SubTerrainCfg):
 
       x_cursor += current_length + gap_width
       platform_index += 1
+      prev_box_height = box_z
 
     # Spawn origin: center of first platform, on top.
     first_plat_len = min(platform_length, terrain_length)
@@ -1803,7 +1778,7 @@ class BoxGapTerrainCfg(SubTerrainCfg):
       [
         first_plat_len / 2,
         terrain_width / 2,
-        platform_height,
+        boxes[0].pos[2] + boxes[0].size[2],
       ]
     )
 

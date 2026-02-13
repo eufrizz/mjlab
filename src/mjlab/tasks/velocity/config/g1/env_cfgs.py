@@ -178,7 +178,7 @@ def unitree_g1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 def unitree_g1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create Unitree G1 flat terrain velocity configuration."""
-  cfg = unitree_g1_rough_env_cfg(play=play)
+  cfg = unitree_g1_rough_env_cfg()
 
   cfg.sim.njmax = 300
   cfg.sim.mujoco.ccd_iterations = 50
@@ -216,36 +216,120 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   reward reweighting for jumping, and relaxed constraints to
   allow dynamic motion.
   """
-  cfg = unitree_g1_rough_env_cfg(play=play)
 
-  # --- Terrain: swap to gap terrain config ---
-  from mjlab.terrains.config import GAP_TERRAINS_CFG
+  cfg = make_velocity_env_cfg()
 
-  assert cfg.scene.terrain is not None
-  cfg.scene.terrain.terrain_generator = replace(GAP_TERRAINS_CFG)
-  cfg.scene.terrain.terrain_generator.curriculum = True
-  cfg.scene.terrain.max_init_terrain_level = 3
+  cfg.sim.mujoco.ccd_iterations = 500
+  cfg.sim.contact_sensor_maxmatch = 500
+  cfg.sim.nconmax = 80
 
-  # Spawn facing +x (toward the gaps) with a small yaw jitter.
-  cfg.events["reset_base"].params["pose_range"]["yaw"] = (-0.4, 0.4)
+  cfg.scene.entities = {"robot": get_g1_robot_cfg()}
+
+  # Set raycast sensor frame to G1 pelvis.
+  for sensor in cfg.scene.sensors or ():
+    if sensor.name == "terrain_scan":
+      assert isinstance(sensor, RayCastSensorCfg)
+      sensor.frame.type = "site"
+      sensor.frame.name = "head_camera_site"
+
+  site_names = ("left_foot", "right_foot")
+  geom_names = tuple(
+    f"{side}_foot{i}_collision" for side in ("left", "right") for i in range(1, 8)
+  )
+
+  feet_ground_cfg = ContactSensorCfg(
+    name="feet_ground_contact",
+    primary=ContactMatch(
+      mode="subtree",
+      pattern=r"^(left_ankle_roll_link|right_ankle_roll_link)$",
+      entity="robot",
+    ),
+    secondary=ContactMatch(mode="body", pattern="terrain"),
+    fields=("found", "force"),
+    reduce="netforce",
+    num_slots=1,
+    track_air_time=True,
+  )
+  self_collision_cfg = ContactSensorCfg(
+    name="self_collision",
+    primary=ContactMatch(mode="subtree", pattern="pelvis", entity="robot"),
+    secondary=ContactMatch(mode="subtree", pattern="pelvis", entity="robot"),
+    fields=("found",),
+    reduce="none",
+    num_slots=1,
+  )
+  cfg.scene.sensors = (cfg.scene.sensors or ()) + (
+    feet_ground_cfg,
+    self_collision_cfg,
+  )
+
+  if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
+    cfg.scene.terrain.terrain_generator.curriculum = True
+
+  joint_pos_action = cfg.actions["joint_pos"]
+  assert isinstance(joint_pos_action, JointPositionActionCfg)
+  joint_pos_action.scale = G1_ACTION_SCALE
+
+  cfg.viewer.body_name = "torso_link"
+
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+  twist_cmd.viz.z_offset = 1.15
+  twist_cmd.ranges.heading = (-0.1, 0.1)
+
+  cfg.observations["critic"].terms["foot_height"].params[
+    "asset_cfg"
+  ].site_names = site_names
+
+  cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
+  cfg.events["base_com"].params["asset_cfg"].body_names = ("torso_link",)
+
 
   # --- Rewards ---
 
-  # Enable air_time to incentivize aerial phases during gaps.
-  cfg.rewards["air_time"].weight = 1.5
+  cfg.rewards["upright"].params["asset_cfg"].body_names = ("torso_link",)
+  cfg.rewards["body_ang_vel"].params["asset_cfg"].body_names = ("torso_link",)
+
+  for reward_name in ["foot_clearance", "foot_swing_height", "foot_slip"]:
+    cfg.rewards[reward_name].params["asset_cfg"].site_names = site_names
+
+  # Slightly loosen upright constraint. rough: 1.
+  cfg.rewards["upright"].weight = 1
+  # Enable air_time to incentivize aerial phases during gaps. rough: 0.0
+  cfg.rewards["air_time"].weight = 0.1
   cfg.rewards["air_time"].params["threshold_min"] = 0.1
   cfg.rewards["air_time"].params["threshold_max"] = 0.6
 
   # Higher swing target to encourage clearing gap edges.
-  cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
-  cfg.rewards["foot_clearance"].params["target_height"] = 0.12
+  # cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
+  # remove foot clearance tracking penalty
+  cfg.rewards["foot_clearance"].params["target_height"] = 0.0
 
   # Slightly lower soft_landing penalty -- jumping inherently
   # produces higher impact.
-  cfg.rewards["soft_landing"].weight = -5e-6
+  # cfg.rewards["soft_landing"].weight = -1e-6
+
+  cfg.rewards["body_ang_vel"].weight = -0.05
+  cfg.rewards["angular_momentum"].weight = -0.02
+
+  cfg.rewards["self_collisions"] = RewardTermCfg(
+    func=mdp.self_collision_cost,
+    weight=-1.0,
+    params={"sensor_name": self_collision_cfg.name},
+  )
 
   # Loosen pose constraints for dynamic motion.
   cfg.rewards["pose"].weight = 0.5
+
+  # Rationale for std values:
+  # - Knees/hip_pitch get the loosest std to allow natural leg bending during stride.
+  # - Hip roll/yaw stay tighter to prevent excessive lateral sway and keep gait stable.
+  # - Ankle roll is very tight for balance; ankle pitch looser for foot clearance.
+  # - Waist roll/pitch stay tight to keep the torso upright and stable.
+  # - Shoulders/elbows get moderate freedom for natural arm swing during walking.
+  # - Wrists are loose (0.3) since they don't affect balance much.
+  # Running values are ~1.5-2x walking values to accommodate larger motion range.
+  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
   cfg.rewards["pose"].params["std_walking"] = {
     # Lower body -- ~30-40% wider than rough config.
     r".*hip_pitch.*": 0.45,
@@ -285,13 +369,21 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     r".*wrist.*": 0.3,
   }
 
-  # Slightly loosen upright constraint.
-  cfg.rewards["upright"].weight = 0.75
+  # --- Terrain: swap to gap terrain config ---
+  from mjlab.terrains.config import GAP_TERRAINS_CFG
+
+  assert cfg.scene.terrain is not None
+  cfg.scene.terrain.terrain_generator = replace(GAP_TERRAINS_CFG)
+  cfg.scene.terrain.terrain_generator.curriculum = True
+  cfg.scene.terrain.max_init_terrain_level = 3
+
+  # Spawn facing +x (toward the gaps) with a small yaw jitter.
+  cfg.events["reset_base"].params["pose_range"]["yaw"] = (-0.2, 0.2)
 
   # --- Terminations ---
 
-  # Relax orientation limit: 70deg -> 85deg for dynamic jumps.
-  cfg.terminations["fell_over"].params["limit_angle"] = math.radians(85.0)
+  # Relax orientation limit: 70deg -> 80deg for dynamic jumps.
+  cfg.terminations["fell_over"].params["limit_angle"] = math.radians(80.0)
 
   # Terminate if robot falls far below ground level.
   cfg.terminations["fell_off_platform"] = TerminationTermCfg(
@@ -335,14 +427,17 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Shorter episodes for faster resets on gap terrain.
   cfg.episode_length_s = 15.0
 
-  # Play mode terrain overrides.
+  # Apply play mode overrides from rough terrain config.
   if play:
+    # Effectively infinite episode length.
     cfg.episode_length_s = int(1e9)
-    assert cfg.scene.terrain is not None
-    if cfg.scene.terrain.terrain_generator is not None:
-      cfg.scene.terrain.terrain_generator.curriculum = False
-      cfg.scene.terrain.terrain_generator.num_cols = 5
-      cfg.scene.terrain.terrain_generator.num_rows = 5
-      cfg.scene.terrain.terrain_generator.border_width = 10.0
+
+    cfg.observations["actor"].enable_corruption = False
+    # cfg.events.pop("push_robot", None)
+    cfg.events["randomize_terrain"] = EventTermCfg(
+      func=envs_mdp.randomize_terrain,
+      mode="reset",
+      params={},
+    )
 
   return cfg

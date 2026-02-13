@@ -68,7 +68,6 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
       func=envs_mdp.height_scan,
       params={"sensor_name": "terrain_scan"},
       noise=Unoise(n_min=-0.1, n_max=0.1),
-      clip=(-1.0, 1.0),
     ),
   }
 
@@ -77,7 +76,6 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     "height_scan": ObservationTermCfg(
       func=envs_mdp.height_scan,
       params={"sensor_name": "terrain_scan"},
-      clip=(-1.0, 1.0),
     ),
     "foot_height": ObservationTermCfg(
       func=mdp.foot_height,
