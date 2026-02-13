@@ -1753,8 +1753,8 @@ class BoxGapTerrainCfg(SubTerrainCfg):
       box_half_h = 0.1
       box_z = prev_box_height + rng.uniform(-platform_height_var, platform_height_var)
 
-      t = platform_index / max(num_platforms_est, 1)
-      rgba = brand_ramp(_MUJOCO_ORANGE, min(t, 1.0))
+      t = platform_index / num_platforms_est
+      rgba = brand_ramp(_MUJOCO_ORANGE, max(t, 1.0))
 
       plat = body.add_geom(
         type=mujoco.mjtGeom.mjGEOM_BOX,
@@ -1781,6 +1781,130 @@ class BoxGapTerrainCfg(SubTerrainCfg):
         boxes[0].pos[2] + boxes[0].size[2],
       ]
     )
+
+    geometries = [
+      TerrainGeometry(geom=box, color=color)
+      for box, color in zip(boxes, box_colors, strict=True)
+    ]
+    return TerrainOutput(origin=origin, geometries=geometries)
+
+@dataclass(kw_only=True)
+class TileGapTerrainCfg(SubTerrainCfg):
+  """Grid of elevated squares separated by gaps
+
+  Generates a sequence of flat elevated platforms with empty gaps
+  between them that drop to ground level. All three dimensions of
+  challenge scale with difficulty:
+
+  - **Gap width** increases (wider gaps = harder to jump).
+  - **Platform length** decreases (less run-up room).
+  - **Platform width** decreases (narrower = harder to stay on).
+  - **Platform height** increases (higher fall penalty).
+
+  Platforms are laid out along the +x axis so the robot is spawned
+  facing the first gap when its yaw is near zero.
+  """
+
+  platform_height_variation: tuple[float, float] = (0.0, 0.2)
+  """(min, max) amount of variation in platform heigh
+
+  At difficulty=0 platforms are all level
+  (easy), at difficulty=1 they are significantly different heights
+  """
+
+  platform_length_range: tuple[float, float] = (1.5, 3.0)
+  """(min, max) platform length along x, in meters.
+
+  Interpolated inversely by difficulty: at difficulty=0 platforms
+  are at the max length, at difficulty=1 they are at the min.
+  """
+
+  platform_width_range: tuple[float, float] | None = None
+  """(min, max) platform width along y, in meters.
+
+  Interpolated inversely by difficulty: narrower at higher
+  difficulty. If None, platforms span the full terrain width.
+  """
+
+  gap_width_range: tuple[float, float] = (0.2, 1.0)
+  """(min, max) gap width between platforms, in meters.
+
+  Interpolated by difficulty: wider gaps at higher difficulty.
+  """
+
+  def function(
+    self,
+    difficulty: float,
+    spec: mujoco.MjSpec,
+    rng: np.random.Generator,
+  ) -> TerrainOutput:
+    body = spec.body("terrain")
+    boxes = []
+    box_colors: list[Tuple[float, float, float, float]] = []
+
+    terrain_length = self.size[0]
+    terrain_width = self.size[1]
+
+    # Interpolate all parameters by difficulty.
+    gap_width = self.gap_width_range[0] + difficulty * (
+      self.gap_width_range[1] - self.gap_width_range[0]
+    )
+    platform_length = self.platform_length_range[1] - difficulty * (
+      self.platform_length_range[1] - self.platform_length_range[0]
+    )
+    platform_height_var = self.platform_height_variation[0] + difficulty * (
+      self.platform_height_variation[1] - self.platform_height_variation[0]
+    )
+
+
+    # Lay platforms along +x with gaps between them.
+    x_cursor = 0.0
+    platform_index = 0
+    num_platforms_est = int(terrain_length * terrain_width / (platform_length + gap_width)**2)
+    prev_row_height = 0.0
+
+    while x_cursor + 0.5 <= terrain_length:
+      current_length = min(platform_length, terrain_length - x_cursor)
+      box_half_h = 0.1
+      half_len = current_length / 2
+      y_cursor = 0.0
+      row_height = prev_row_height + rng.uniform(-platform_height_var/2, platform_height_var/2)
+
+      while y_cursor + 0.5 <= terrain_width:
+        curr_wid = min(current_length, terrain_width - y_cursor)
+        half_wid = curr_wid / 2
+        box_z = row_height + rng.uniform(-platform_height_var/2, platform_height_var/2)
+
+        t = min(platform_index / num_platforms_est, 1)
+        rgba = brand_ramp(_MUJOCO_ORANGE, t)
+
+        plat = body.add_geom(
+          type=mujoco.mjtGeom.mjGEOM_BOX,
+          size=(half_len, half_wid, box_half_h),
+          pos=(
+            x_cursor + half_len,
+            y_cursor + half_len,
+            box_z,
+          ),
+        )
+        boxes.append(plat)
+        box_colors.append(rgba)
+        platform_index += 1
+        y_cursor += curr_wid + gap_width
+
+      x_cursor += current_length + gap_width
+      prev_row_height = row_height
+
+    # Spawn origin: center-ish platform
+    first_plat_idx = len(boxes) // 2
+    origin = np.array(
+      [
+        boxes[first_plat_idx].pos[0],
+        boxes[first_plat_idx].pos[1],
+        boxes[first_plat_idx].pos[2] + boxes[first_plat_idx].size[2],
+      ]
+    )
+    box_colors[first_plat_idx] = tuple(list(_MUJOCO_BLUE) + [1])
 
     geometries = [
       TerrainGeometry(geom=box, color=color)

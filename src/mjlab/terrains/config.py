@@ -10,7 +10,7 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
   num_rows=10,
   num_cols=20,
   sub_terrains={
-    "flat": terrain_gen.BoxFlatTerrainCfg(proportion=0.2),
+    "flat": terrain_gen.BoxFlatTerrainCfg(proportion=0.0),
     "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
       proportion=0.2,
       step_height_range=(0.0, 0.1),
@@ -19,7 +19,7 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       border_width=1.0,
     ),
     "pyramid_stairs_inv": terrain_gen.BoxInvertedPyramidStairsTerrainCfg(
-      proportion=0.15,
+      proportion=0.2,
       step_height_range=(0.0, 0.1),
       step_width=0.3,
       platform_width=3.0,
@@ -50,11 +50,11 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       num_waves=4,
       border_width=0.25,
     ),
-    "gap": terrain_gen.BoxGapTerrainCfg(
-      proportion=0.05,
+    "gap": terrain_gen.TileGapTerrainCfg(
+      proportion=0.1,
       platform_height_variation=(0.0, 0.2),
-      platform_length_range=(0.5, 1.0),
-      gap_width_range=(0.1, 0.2),
+      platform_length_range=(0.6, 2.0),
+      gap_width_range=(0.2, 0.3),
     ),
   },
   add_lights=True,
@@ -191,25 +191,32 @@ ALL_TERRAINS_CFG = TerrainGeneratorCfg(
 )
 
 GAP_TERRAINS_CFG = TerrainGeneratorCfg(
-  size=(16.0, 8.0),
-  border_width=20.0,
+  size=(8.0, 8.0),
+  border_width=10.0,
   num_rows=10,
-  num_cols=4,
+  num_cols=10,
   sub_terrains={
     "gap": terrain_gen.BoxGapTerrainCfg(
-      proportion=0.2,
+      proportion=0.,
       platform_height_variation=(0.0, 0.2),
       platform_length_range=(0.5, 2.0),
       gap_width_range=(0.2, 1.0),
     ),
+    "tile_gap": terrain_gen.TileGapTerrainCfg(
+      proportion=1,
+      platform_height_variation=(0.0, 0.2),
+      platform_length_range=(0.6, 2.0),
+      gap_width_range=(0.2, 0.8),
+    ),
+    
     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-      proportion=0.4,
+      proportion=0.,
       noise_range=(0.02, 0.06),
       noise_step=0.02,
       border_width=0.25,
     ),
     "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
-      proportion=0.4,
+      proportion=0.,
       step_height_range=(0.0, 0.08),
       step_width=0.3,
       platform_width=3.0,
