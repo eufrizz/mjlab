@@ -19,7 +19,7 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       border_width=1.0,
     ),
     "pyramid_stairs_inv": terrain_gen.BoxInvertedPyramidStairsTerrainCfg(
-      proportion=0.2,
+      proportion=0.15,
       step_height_range=(0.0, 0.1),
       step_width=0.3,
       platform_width=3.0,
@@ -49,6 +49,12 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       amplitude_range=(0.0, 0.2),
       num_waves=4,
       border_width=0.25,
+    ),
+    "gap": terrain_gen.BoxGapTerrainCfg(
+      proportion=0.05,
+      platform_height_variation=(0.0, 0.2),
+      platform_length_range=(0.5, 1.0),
+      gap_width_range=(0.1, 0.2),
     ),
   },
   add_lights=True,
@@ -191,19 +197,19 @@ GAP_TERRAINS_CFG = TerrainGeneratorCfg(
   num_cols=4,
   sub_terrains={
     "gap": terrain_gen.BoxGapTerrainCfg(
-      proportion=0.8,
+      proportion=0.2,
       platform_height_variation=(0.0, 0.2),
       platform_length_range=(0.5, 2.0),
       gap_width_range=(0.2, 1.0),
     ),
     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-      proportion=0.1,
+      proportion=0.4,
       noise_range=(0.02, 0.06),
       noise_step=0.02,
       border_width=0.25,
     ),
     "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
-      proportion=0.1,
+      proportion=0.4,
       step_height_range=(0.0, 0.08),
       step_width=0.3,
       platform_width=3.0,
