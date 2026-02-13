@@ -193,9 +193,9 @@ GAP_TERRAINS_CFG = TerrainGeneratorCfg(
     "flat": terrain_gen.BoxFlatTerrainCfg(proportion=0.15),
     "gap": terrain_gen.BoxGapTerrainCfg(
       proportion=0.8,
-      platform_height_range=(0.2, 0.4),
+      platform_height_range=(0.4, 0.8),
       platform_length_range=(0.5, 2.0),
-      gap_width_range=(0.2, 0.8),
+      gap_width_range=(0.2, 1.0),
     ),
     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
       proportion=0.1,
