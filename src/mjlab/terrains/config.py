@@ -184,6 +184,36 @@ ALL_TERRAINS_CFG = TerrainGeneratorCfg(
   add_lights=True,
 )
 
+GAP_TERRAINS_CFG = TerrainGeneratorCfg(
+  size=(16.0, 8.0),
+  border_width=20.0,
+  num_rows=10,
+  num_cols=1,
+  sub_terrains={
+    "flat": terrain_gen.BoxFlatTerrainCfg(proportion=0.15),
+    "gap": terrain_gen.BoxGapTerrainCfg(
+      proportion=0.8,
+      platform_height_range=(0.2, 0.4),
+      platform_length_range=(0.5, 2.0),
+      gap_width_range=(0.2, 0.8),
+    ),
+    "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
+      proportion=0.1,
+      noise_range=(0.02, 0.06),
+      noise_step=0.02,
+      border_width=0.25,
+    ),
+    "pyramid_stairs": terrain_gen.BoxPyramidStairsTerrainCfg(
+      proportion=0.1,
+      step_height_range=(0.0, 0.08),
+      step_width=0.3,
+      platform_width=3.0,
+      border_width=1.0,
+    ),
+  },
+  add_lights=True,
+)
+
 
 if __name__ == "__main__":
   import mujoco.viewer

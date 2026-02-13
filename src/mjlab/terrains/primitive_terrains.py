@@ -34,6 +34,7 @@ from mjlab.utils.color import (
 _MUJOCO_BLUE = (0.20, 0.45, 0.95)
 _MUJOCO_RED = (0.90, 0.30, 0.30)
 _MUJOCO_GREEN = (0.25, 0.80, 0.45)
+_MUJOCO_ORANGE = (0.95, 0.60, 0.15)
 
 
 def _get_platform_color(
@@ -1669,4 +1670,145 @@ class BoxNestedRingsTerrainCfg(SubTerrainCfg):
     geometries.append(TerrainGeometry(geom=box, color=brand_ramp(_MUJOCO_BLUE, 0.5)))
 
     origin = np.array([terrain_center[0], terrain_center[1], platform_h])
+    return TerrainOutput(origin=origin, geometries=geometries)
+  
+class BoxGapTerrainCfg(SubTerrainCfg):
+  """Elevated platforms separated by gaps along the x-axis.
+
+  Generates a sequence of flat elevated platforms with empty gaps
+  between them that drop to ground level. All three dimensions of
+  challenge scale with difficulty:
+
+  - **Gap width** increases (wider gaps = harder to jump).
+  - **Platform length** decreases (less run-up room).
+  - **Platform width** decreases (narrower = harder to stay on).
+  - **Platform height** increases (higher fall penalty).
+
+  Platforms are laid out along the +x axis so the robot is spawned
+  facing the first gap when its yaw is near zero.
+  """
+
+  platform_height_range: tuple[float, float] = (0.15, 0.5)
+  """(min, max) height of platforms above ground, in meters.
+
+  At difficulty=0 platforms are nearly flush with the ground
+  (easy), at difficulty=1 they are at full height (scary fall).
+  """
+
+  platform_length_range: tuple[float, float] = (1.5, 3.0)
+  """(min, max) platform length along x, in meters.
+
+  Interpolated inversely by difficulty: at difficulty=0 platforms
+  are at the max length, at difficulty=1 they are at the min.
+  """
+
+  # platform_width_range: tuple[float, float] | None = None
+  """(min, max) platform width along y, in meters.
+
+  Interpolated inversely by difficulty: narrower at higher
+  difficulty. If None, platforms span the full terrain width.
+  """
+
+  gap_width_range: tuple[float, float] = (0.2, 1.0)
+  """(min, max) gap width between platforms, in meters.
+
+  Interpolated by difficulty: wider gaps at higher difficulty.
+  """
+
+  def function(
+    self,
+    difficulty: float,
+    spec: mujoco.MjSpec,
+    rng: np.random.Generator,
+  ) -> TerrainOutput:
+    del rng  # Unused.
+    body = spec.body("terrain")
+    boxes = []
+    box_colors: list[Tuple[float, float, float, float]] = []
+
+    terrain_length = self.size[0]
+    terrain_width = self.size[1]
+
+    # Interpolate all parameters by difficulty.
+    gap_width = self.gap_width_range[0] + difficulty * (
+      self.gap_width_range[1] - self.gap_width_range[0]
+    )
+    platform_length = self.platform_length_range[1] - difficulty * (
+      self.platform_length_range[1] - self.platform_length_range[0]
+    )
+    platform_height = self.platform_height_range[0] + difficulty * (
+      self.platform_height_range[1] - self.platform_height_range[0]
+    )
+    # if self.platform_width_range is not None:
+    #   platform_width = self.platform_width_range[1] - difficulty * (
+    #     self.platform_width_range[1] - self.platform_width_range[0]
+    #   )
+    # else:
+    platform_width = terrain_width
+
+    # Ground floor beneath the platforms so falling lands on
+    # solid ground rather than void.
+    ground_thickness = 1.0
+    ground = body.add_geom(
+      type=mujoco.mjtGeom.mjGEOM_BOX,
+      size=(
+        terrain_length / 2,
+        terrain_width / 2,
+        ground_thickness / 2,
+      ),
+      pos=(
+        terrain_length / 2,
+        terrain_width / 2,
+        -ground_thickness / 2,
+      ),
+    )
+    boxes.append(ground)
+    box_colors.append((0.3, 0.3, 0.3, 1.0))
+
+    # Lay platforms along +x with gaps between them.
+    x_cursor = 0.0
+    platform_index = 0
+    num_platforms_est = max(int(terrain_length / (platform_length + gap_width)), 1)
+
+    while x_cursor + 0.5 <= terrain_length:
+      current_length = min(platform_length, terrain_length - x_cursor)
+      # if current_length < 0.3:
+      #   break
+
+      half_len = current_length / 2
+      half_wid = platform_width / 2
+      box_half_h = platform_height / 2
+
+      t = platform_index / max(num_platforms_est, 1)
+      rgba = brand_ramp(_MUJOCO_ORANGE, min(t, 1.0))
+
+      plat = body.add_geom(
+        type=mujoco.mjtGeom.mjGEOM_BOX,
+        size=(half_len, half_wid, box_half_h),
+        pos=(
+          x_cursor + half_len,
+          terrain_width / 2,
+          box_half_h,
+        ),
+      )
+      boxes.append(plat)
+      box_colors.append(rgba)
+
+      x_cursor += current_length + gap_width
+      platform_index += 1
+
+    # Spawn origin: center of first platform, on top.
+    first_plat_len = min(platform_length, terrain_length)
+    origin = np.array(
+      [
+        first_plat_len / 2,
+        terrain_width / 2,
+        platform_height,
+      ]
+    )
+
+    geometries = [
+      TerrainGeometry(geom=box, color=color)
+      for box, color in zip(boxes, box_colors, strict=True)
+    ]
     return TerrainOutput(origin=origin, geometries=geometries)

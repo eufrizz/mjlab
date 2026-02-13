@@ -1,5 +1,8 @@
 """Unitree G1 velocity environment configurations."""
 
+import math
+from dataclasses import replace
+
 from mjlab.asset_zoo.robots import (
   G1_ACTION_SCALE,
   get_g1_robot_cfg,
@@ -7,8 +10,10 @@ from mjlab.asset_zoo.robots import (
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
+from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg, RayCastSensorCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
@@ -200,5 +205,144 @@ def unitree_g1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     assert isinstance(twist_cmd, UniformVelocityCommandCfg)
     twist_cmd.ranges.lin_vel_x = (-1.5, 2.0)
     twist_cmd.ranges.ang_vel_z = (-0.7, 0.7)
+
+  return cfg
+
+
+def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Create Unitree G1 gap terrain velocity configuration.
+
+  Builds on the rough terrain config with gap-specific terrain,
+  reward reweighting for jumping, and relaxed constraints to
+  allow dynamic motion.
+  """
+  cfg = unitree_g1_rough_env_cfg(play=play)
+
+  # --- Terrain: swap to gap terrain config ---
+  from mjlab.terrains.config import GAP_TERRAINS_CFG
+
+  assert cfg.scene.terrain is not None
+  cfg.scene.terrain.terrain_generator = replace(GAP_TERRAINS_CFG)
+  cfg.scene.terrain.terrain_generator.curriculum = True
+  cfg.scene.terrain.max_init_terrain_level = 3
+
+  # Spawn facing +x (toward the gaps) with a small yaw jitter.
+  cfg.events["reset_base"].params["pose_range"]["yaw"] = (-0.4, 0.4)
+
+  # --- Rewards ---
+
+  # Enable air_time to incentivize aerial phases during gaps.
+  cfg.rewards["air_time"].weight = 1.5
+  cfg.rewards["air_time"].params["threshold_min"] = 0.1
+  cfg.rewards["air_time"].params["threshold_max"] = 0.6
+
+  # Higher swing target to encourage clearing gap edges.
+  cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
+  cfg.rewards["foot_clearance"].params["target_height"] = 0.12
+
+  # Slightly lower soft_landing penalty -- jumping inherently
+  # produces higher impact.
+  cfg.rewards["soft_landing"].weight = -5e-6
+
+  # Loosen pose constraints for dynamic motion.
+  cfg.rewards["pose"].weight = 0.5
+  cfg.rewards["pose"].params["std_walking"] = {
+    # Lower body -- ~30-40% wider than rough config.
+    r".*hip_pitch.*": 0.45,
+    r".*hip_roll.*": 0.2,
+    r".*hip_yaw.*": 0.2,
+    r".*knee.*": 0.5,
+    r".*ankle_pitch.*": 0.35,
+    r".*ankle_roll.*": 0.15,
+    # Waist.
+    r".*waist_yaw.*": 0.25,
+    r".*waist_roll.*": 0.1,
+    r".*waist_pitch.*": 0.15,
+    # Arms.
+    r".*shoulder_pitch.*": 0.2,
+    r".*shoulder_roll.*": 0.2,
+    r".*shoulder_yaw.*": 0.15,
+    r".*elbow.*": 0.2,
+    r".*wrist.*": 0.3,
+  }
+  cfg.rewards["pose"].params["std_running"] = {
+    # Lower body.
+    r".*hip_pitch.*": 0.7,
+    r".*hip_roll.*": 0.3,
+    r".*hip_yaw.*": 0.3,
+    r".*knee.*": 0.8,
+    r".*ankle_pitch.*": 0.5,
+    r".*ankle_roll.*": 0.2,
+    # Waist.
+    r".*waist_yaw.*": 0.35,
+    r".*waist_roll.*": 0.12,
+    r".*waist_pitch.*": 0.25,
+    # Arms.
+    r".*shoulder_pitch.*": 0.6,
+    r".*shoulder_roll.*": 0.25,
+    r".*shoulder_yaw.*": 0.2,
+    r".*elbow.*": 0.4,
+    r".*wrist.*": 0.3,
+  }
+
+  # Slightly loosen upright constraint.
+  cfg.rewards["upright"].weight = 0.75
+
+  # --- Terminations ---
+
+  # Relax orientation limit: 70deg -> 85deg for dynamic jumps.
+  cfg.terminations["fell_over"].params["limit_angle"] = math.radians(85.0)
+
+  # Terminate if robot falls far below ground level.
+  cfg.terminations["fell_off_platform"] = TerminationTermCfg(
+    func=envs_mdp.root_height_below_minimum,
+    params={"minimum_height": -0.5},
+  )
+
+  # --- Commands: forward-biased for gap traversal ---
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+  twist_cmd.ranges.lin_vel_x = (-0.5, 1.5)
+  twist_cmd.ranges.lin_vel_y = (-0.3, 0.3)
+  twist_cmd.ranges.ang_vel_z = (-0.3, 0.3)
+  twist_cmd.rel_standing_envs = 0.05
+  twist_cmd.rel_heading_envs = 0.1
+
+  # --- Curriculum: slower velocity ramp ---
+  cfg.curriculum["command_vel"] = CurriculumTermCfg(
+    func=mdp.commands_vel,
+    params={
+      "command_name": "twist",
+      "velocity_stages": [
+        {
+          "step": 0,
+          "lin_vel_x": (0.2, 2),
+          "ang_vel_z": (-0.1, 0.1),
+        },
+        {
+          "step": 8000 * 24,
+          "lin_vel_x": (0.5, 2.5),
+          "ang_vel_z": (-0.2, 0.2),
+        },
+        {
+          "step": 15000 * 24,
+          "lin_vel_x": (0.1, 3),
+        },
+      ],
+    },
+  )
+
+  # Shorter episodes for faster resets on gap terrain.
+  cfg.episode_length_s = 15.0
+
+  # Play mode terrain overrides.
+  if play:
+    cfg.episode_length_s = int(1e9)
+    assert cfg.scene.terrain is not None
+    if cfg.scene.terrain.terrain_generator is not None:
+      cfg.scene.terrain.terrain_generator.curriculum = False
+      cfg.scene.terrain.terrain_generator.num_cols = 5
+      cfg.scene.terrain.terrain_generator.num_rows = 5
+      cfg.scene.terrain.terrain_generator.border_width = 10.0
 
   return cfg
