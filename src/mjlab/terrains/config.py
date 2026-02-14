@@ -54,7 +54,7 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       proportion=0.2,
       platform_height_variation=(0.0, 0.2),
       platform_length_range=(1.0, 3.0),
-      gap_width_range=(0.07, 0.3),
+      gap_width_range=(0.01, 0.15),
     ),
   },
   add_lights=True,
