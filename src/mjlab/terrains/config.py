@@ -51,10 +51,10 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
       border_width=0.25,
     ),
     "gap": terrain_gen.TileGapTerrainCfg(
-      proportion=0.1,
+      proportion=0.2,
       platform_height_variation=(0.0, 0.2),
-      platform_length_range=(0.6, 2.0),
-      gap_width_range=(0.2, 0.3),
+      platform_length_range=(1.0, 3.0),
+      gap_width_range=(0.07, 0.3),
     ),
   },
   add_lights=True,
