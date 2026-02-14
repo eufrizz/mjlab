@@ -137,6 +137,9 @@ def unitree_g1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   }
 
   cfg.rewards["upright"].params["asset_cfg"].body_names = ("torso_link",)
+  cfg.rewards["upright"].weight = 2.0
+  cfg.rewards["upright"].params["std"] = math.sqrt(0.5)
+
   cfg.rewards["body_ang_vel"].params["asset_cfg"].body_names = ("torso_link",)
 
   for reward_name in ["foot_clearance", "foot_swing_height", "foot_slip"]:
