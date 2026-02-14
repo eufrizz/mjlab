@@ -1883,7 +1883,7 @@ class TileGapTerrainCfg(SubTerrainCfg):
           size=(half_len, half_wid, box_half_h),
           pos=(
             x_cursor + half_len,
-            y_cursor + half_len,
+            y_cursor + half_wid,
             box_z,
           ),
         )
