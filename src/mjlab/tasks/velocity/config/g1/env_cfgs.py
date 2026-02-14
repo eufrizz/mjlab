@@ -137,8 +137,13 @@ def unitree_g1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   }
 
   cfg.rewards["upright"].params["asset_cfg"].body_names = ("torso_link",)
+  # match the velocity tracking weight
   cfg.rewards["upright"].weight = 2.0
   cfg.rewards["upright"].params["std"] = math.sqrt(0.5)
+
+  # this inhibits the ability to traverse difficult terrain, half it
+  cfg.rewards["action_rate_l2"].weight = -0.05
+
 
   cfg.rewards["body_ang_vel"].params["asset_cfg"].body_names = ("torso_link",)
 
