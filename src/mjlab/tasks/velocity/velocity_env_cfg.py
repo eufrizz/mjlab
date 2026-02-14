@@ -363,8 +363,9 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
         "command_name": "twist",
         "velocity_stages": [
           {"step": 0, "lin_vel_x": (-1.0, 1.0), "ang_vel_z": (-0.5, 0.5)},
+          {"step": 40000, "lin_vel_x": (-1.0, 1.5), "ang_vel_z": (-0.6, 0.6)},
           {"step": 50000, "lin_vel_x": (-1.5, 2.0), "ang_vel_z": (-0.7, 0.7)},
-          {"step": 100000, "lin_vel_x": (-2.0, 3.0)},
+          {"step": 70000, "lin_vel_x": (-2.0, 3.0)},
         ],
       },
     ),
