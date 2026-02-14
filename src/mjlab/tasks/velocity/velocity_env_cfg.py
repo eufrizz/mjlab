@@ -36,6 +36,17 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
   # Observations
   ##
 
+  terrain_scan = RayCastSensorCfg(
+    name="terrain_scan",
+    frame=ObjRef(type="body", name="", entity="robot"),  # Set per-robot.
+    ray_alignment="yaw",
+    pattern=GridPatternCfg(size=(1.5, 1.05), resolution=0.15),
+    max_distance=3.0,
+    exclude_parent_body=True,
+    debug_vis=True,
+    viz=RayCastSensorCfg.VizCfg(show_normals=True),
+  )
+
   actor_terms = {
     "base_lin_vel": ObservationTermCfg(
       func=mdp.builtin_sensor,
@@ -68,6 +79,7 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
       func=envs_mdp.height_scan,
       params={"sensor_name": "terrain_scan"},
       noise=Unoise(n_min=-0.1, n_max=0.1),
+      scale=1/terrain_scan.max_distance
     ),
   }
 
@@ -76,6 +88,7 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     "height_scan": ObservationTermCfg(
       func=envs_mdp.height_scan,
       params={"sensor_name": "terrain_scan"},
+      scale=1/terrain_scan.max_distance
     ),
     "foot_height": ObservationTermCfg(
       func=mdp.foot_height,
@@ -361,16 +374,7 @@ def make_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
   # Assemble and return
   ##
 
-  terrain_scan = RayCastSensorCfg(
-    name="terrain_scan",
-    frame=ObjRef(type="body", name="", entity="robot"),  # Set per-robot.
-    ray_alignment="yaw",
-    pattern=GridPatternCfg(size=(1.5, 1.05), resolution=0.15),
-    max_distance=5.0,
-    exclude_parent_body=True,
-    debug_vis=True,
-    viz=RayCastSensorCfg.VizCfg(show_normals=True),
-  )
+  
 
   return ManagerBasedRlEnvCfg(
     scene=SceneCfg(
