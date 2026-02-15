@@ -303,18 +303,14 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   for reward_name in ["foot_clearance", "foot_swing_height", "foot_slip"]:
     cfg.rewards[reward_name].params["asset_cfg"].site_names = site_names
 
-  # match the velocity tracking weight
+  # match the velocity tracking weight. loosen the std dev.
   cfg.rewards["upright"].weight = 2.0
-  cfg.rewards["upright"].params["std"] = math.sqrt(0.5)
+  cfg.rewards["upright"].params["std"] = math.sqrt(0.9)
 
-  # Loosen pose constraints for dynamic motion.
-  cfg.rewards["pose"].weight = 0.5
-
+  
   # this inhibits the ability to traverse difficult terrain + go at speed, diminish it (orig -0.1)
+  # todo: change to l1 erro to permit more explosive movements
   cfg.rewards["action_rate_l2"].weight = -0.01
-
-  # orig -2
-  cfg.rewards["foot_clearance"].weight = -0.01
 
   # swing it baby
   cfg.rewards["foot_swing_height"].weight = 0
@@ -326,12 +322,14 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
   # Higher swing target to encourage clearing gap edges.
   # cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
-  # remove foot clearance tracking penalty
-  cfg.rewards["foot_clearance"].params["target_height"] = 0.0
+  # remove foot clearance tracking penalty orig -2
+  # cfg.rewards["foot_clearance"].weight = -0.01
 
   # Slightly lower soft_landing penalty -- jumping inherently
   # produces higher impact.
   # cfg.rewards["soft_landing"].weight = -1e-6
+
+  #TODO: step count penalty, or maybe stride length reward?
 
   cfg.rewards["body_ang_vel"].weight = -0.05
   cfg.rewards["angular_momentum"].weight = -0.02
@@ -342,7 +340,8 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"sensor_name": self_collision_cfg.name},
   )
 
-
+  # Loosen pose constraints for dynamic motion.
+  cfg.rewards["pose"].weight = 0.0
 
   # Rationale for std values:
   # - Knees/hip_pitch get the loosest std to allow natural leg bending during stride.
@@ -435,20 +434,17 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           "ang_vel_z": (-0.1, 0.1),
         },
         {
-          "step": 8000 * 24,
+          "step": 10000,
           "lin_vel_x": (0.5, 2.5),
           "ang_vel_z": (-0.2, 0.2),
         },
         {
-          "step": 15000 * 24,
+          "step": 20000 * 24,
           "lin_vel_x": (0.1, 3),
         },
       ],
     },
   )
-
-  # Shorter episodes for faster resets on gap terrain.
-  cfg.episode_length_s = 15.0
 
   # Apply play mode overrides from rough terrain config.
   if play:
