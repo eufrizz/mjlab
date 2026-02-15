@@ -204,21 +204,21 @@ GAP_TERRAINS_CFG = TerrainGeneratorCfg(
   sub_terrains={
     "gap_height": terrain_gen.TileGapTerrainCfg(
       proportion=0.32,
-      platform_height_variation=(0.0, 0.2),
-      platform_length_range=(1, 2.0),
-      gap_width_range=(0.02, 0.1),
+      platform_height_variation=(0.0, 0.3),
+      platform_length_range=(0.6, 2.0),
+      gap_width_range=(0.02, 0.2),
     ),
     "gap_width": terrain_gen.TileGapTerrainCfg(
       proportion=0.32,
       platform_height_variation=(0.0, 0.1),
-      platform_length_range=(0.8, 2.0),
-      gap_width_range=(0.05, 1),
+      platform_length_range=(0.6, 2.0),
+      gap_width_range=(0.05, 1.2),
     ),
     "gap_both": terrain_gen.TileGapTerrainCfg(
       proportion=0.32,
-      platform_height_variation=(0.0, 0.2),
-      platform_length_range=(0.8, 2.0),
-      gap_width_range=(0.02, 0.8),
+      platform_height_variation=(0.0, 0.3),
+      platform_length_range=(0.6, 2.0),
+      gap_width_range=(0.02, 1.2),
     ),
     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
       proportion=0.05,
