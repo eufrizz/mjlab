@@ -303,12 +303,26 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   for reward_name in ["foot_clearance", "foot_swing_height", "foot_slip"]:
     cfg.rewards[reward_name].params["asset_cfg"].site_names = site_names
 
-  # Slightly loosen upright constraint. rough: 1.
-  cfg.rewards["upright"].weight = 1
+  # match the velocity tracking weight
+  cfg.rewards["upright"].weight = 2.0
+  cfg.rewards["upright"].params["std"] = math.sqrt(0.5)
+
+  # Loosen pose constraints for dynamic motion.
+  cfg.rewards["pose"].weight = 0.5
+
+  # this inhibits the ability to traverse difficult terrain + go at speed, diminish it (orig -0.1)
+  cfg.rewards["action_rate_l2"].weight = -0.01
+
+  # orig -2
+  cfg.rewards["foot_clearance"].weight = -0.01
+
+  # swing it baby
+  cfg.rewards["foot_swing_height"].weight = 0
+
   # Enable air_time to incentivize aerial phases during gaps. rough: 0.0
-  cfg.rewards["air_time"].weight = 0.1
-  cfg.rewards["air_time"].params["threshold_min"] = 0.1
-  cfg.rewards["air_time"].params["threshold_max"] = 0.6
+  # cfg.rewards["air_time"].weight = 0.1
+  # cfg.rewards["air_time"].params["threshold_min"] = 0.1
+  # cfg.rewards["air_time"].params["threshold_max"] = 0.6
 
   # Higher swing target to encourage clearing gap edges.
   # cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
@@ -328,8 +342,7 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"sensor_name": self_collision_cfg.name},
   )
 
-  # Loosen pose constraints for dynamic motion.
-  cfg.rewards["pose"].weight = 0.5
+
 
   # Rationale for std values:
   # - Knees/hip_pitch get the loosest std to allow natural leg bending during stride.
