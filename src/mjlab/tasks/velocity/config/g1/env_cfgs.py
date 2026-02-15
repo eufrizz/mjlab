@@ -323,7 +323,7 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Higher swing target to encourage clearing gap edges.
   # cfg.rewards["foot_swing_height"].params["target_height"] = 0.15
   # remove foot clearance tracking penalty orig -2
-  # cfg.rewards["foot_clearance"].weight = -0.01
+  cfg.rewards["foot_clearance"].weight = -0.01
 
   # Slightly lower soft_landing penalty -- jumping inherently
   # produces higher impact.
@@ -341,7 +341,7 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
 
   # Loosen pose constraints for dynamic motion.
-  cfg.rewards["pose"].weight = 0.0
+  cfg.rewards["pose"].weight = 0.1
 
   # Rationale for std values:
   # - Knees/hip_pitch get the loosest std to allow natural leg bending during stride.

@@ -199,7 +199,7 @@ ALL_TERRAINS_CFG = TerrainGeneratorCfg(
 GAP_TERRAINS_CFG = TerrainGeneratorCfg(
   size=(8.0, 8.0),
   border_width=10.0,
-  num_rows=10,
+  num_rows=11,
   num_cols=10,
   sub_terrains={
     "gap_height": terrain_gen.TileGapTerrainCfg(
