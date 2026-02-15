@@ -53,13 +53,13 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     "gap1": terrain_gen.TileGapTerrainCfg(
       proportion=0.1,
       platform_height_variation=(0.0, 0.01),
-      platform_length_range=(1.0, 3.0),
+      platform_length_range=(1.0, 2.5),
       gap_width_range=(0.01, 0.15),
     ),
     "gap2": terrain_gen.TileGapTerrainCfg(
       proportion=0.1,
       platform_height_variation=(0.01, 0.1),
-      platform_length_range=(1.0, 3.0),
+      platform_length_range=(1.0, 2.5),
       gap_width_range=(0.01, 0.06),
     ),
   },
@@ -199,29 +199,30 @@ ALL_TERRAINS_CFG = TerrainGeneratorCfg(
 GAP_TERRAINS_CFG = TerrainGeneratorCfg(
   size=(8.0, 8.0),
   border_width=10.0,
-  num_rows=11,
+  num_rows=11, # increase for finer difficulty gradation
   num_cols=10,
+  # difficulty_range=(0.5, 0.9), # useful for video showing performance on hard terrain
   sub_terrains={
     "gap_height": terrain_gen.TileGapTerrainCfg(
-      proportion=0.32,
+      proportion=0.33,
       platform_height_variation=(0.0, 0.3),
       platform_length_range=(0.6, 2.0),
       gap_width_range=(0.02, 0.2),
     ),
     "gap_width": terrain_gen.TileGapTerrainCfg(
-      proportion=0.32,
+      proportion=0.33,
       platform_height_variation=(0.0, 0.1),
       platform_length_range=(0.6, 2.0),
       gap_width_range=(0.05, 1.2),
     ),
     "gap_both": terrain_gen.TileGapTerrainCfg(
-      proportion=0.32,
+      proportion=0.33,
       platform_height_variation=(0.0, 0.3),
       platform_length_range=(0.6, 2.0),
       gap_width_range=(0.02, 1.2),
     ),
     "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-      proportion=0.05,
+      proportion=0.0,
       noise_range=(0.02, 0.06),
       noise_step=0.02,
       border_width=0.25,

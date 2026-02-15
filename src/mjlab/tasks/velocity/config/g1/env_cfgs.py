@@ -399,7 +399,8 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.scene.terrain.terrain_generator.curriculum = True
   cfg.scene.terrain.max_init_terrain_level = 3
 
-  # Spawn facing +x (toward the gaps) with a small yaw jitter.
+  # Spawn facing +x with a small yaw jitter so the gaps are front on
+  # might not be necessary
   cfg.events["reset_base"].params["pose_range"]["yaw"] = (-0.2, 0.2)
 
   # --- Terminations ---
@@ -436,18 +437,31 @@ def unitree_g1_gap_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         {
           "step": 10000,
           "lin_vel_x": (0.5, 2.5),
-          "ang_vel_z": (-0.2, 0.2),
+          "ang_vel_z": (-0.4, 0.4),
         },
         {
-          "step": 20000 * 24,
+          "step": 20000,
           "lin_vel_x": (0.1, 3),
+          "ang_vel_z": (-0.6, 0.6),
         },
       ],
     },
   )
 
-  # Apply play mode overrides from rough terrain config.
   if play:
+    # Useful to record a video showing certain capability e.g. high speed
+    # cfg.events["reset_base"].params["pose_range"]["yaw"] = (math.pi/2-0.2, math.pi/2+0.2)
+    # cfg.events["reset_base"].params["pose_range"]["x"] = (0, 0)
+    # cfg.events["reset_base"].params["pose_range"]["y"] = (0, 0)
+    # cfg.scene.terrain.terrain_generator.curriculum = False
+    # cfg.commands["twist"].ranges.lin_vel_x = (1.2, 2.80)
+    # cfg.commands["twist"].ranges.lin_vel_y = (-1.5, 2.0)
+    # cfg.commands["twist"].ranges.ang_vel_z = (-0.7, 0.7)  
+
+    cfg.viewer.distance = 3.0
+    cfg.viewer.elevation = -25.0
+    cfg.viewer.azimuth = 135.0
+
     # Effectively infinite episode length.
     cfg.episode_length_s = int(1e9)
 
