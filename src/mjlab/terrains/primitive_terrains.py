@@ -1702,13 +1702,6 @@ class BoxGapTerrainCfg(SubTerrainCfg):
   are at the max length, at difficulty=1 they are at the min.
   """
 
-  # platform_width_range: tuple[float, float] | None = None
-  """(min, max) platform width along y, in meters.
-
-  Interpolated inversely by difficulty: narrower at higher
-  difficulty. If None, platforms span the full terrain width.
-  """
-
   gap_width_range: tuple[float, float] = (0.2, 1.0)
   """(min, max) gap width between platforms, in meters.
 
@@ -1817,13 +1810,6 @@ class TileGapTerrainCfg(SubTerrainCfg):
 
   Interpolated inversely by difficulty: at difficulty=0 platforms
   are at the max length, at difficulty=1 they are at the min.
-  """
-
-  platform_width_range: tuple[float, float] | None = None
-  """(min, max) platform width along y, in meters.
-
-  Interpolated inversely by difficulty: narrower at higher
-  difficulty. If None, platforms span the full terrain width.
   """
 
   gap_width_range: tuple[float, float] = (0.2, 1.0)
